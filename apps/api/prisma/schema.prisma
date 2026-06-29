@@ -1,0 +1,90 @@
+// RentMonitoring — Prisma 7 schema (spec: ТЗ.md §4)
+// Coordinates stored as fractions 0.0..1.0 (Json), never pixels — see ТЗ §2.
+
+generator client {
+  provider     = "prisma-client"
+  output       = "../generated/prisma"
+  moduleFormat = "cjs"
+  runtime      = "nodejs"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum RoomStatus {
+  FREE
+  BOOKED
+  OCCUPIED
+  OVERDUE
+  REPAIR
+}
+
+enum InvoiceStatus {
+  UNPAID
+  PAID
+  CANCELLED
+}
+
+model Building {
+  id        String   @id @default(uuid())
+  name      String
+  address   String
+  floors    Floor[]
+  createdAt DateTime @default(now())
+}
+
+model Floor {
+  id           String   @id @default(uuid())
+  buildingId   String
+  building     Building @relation(fields: [buildingId], references: [id], onDelete: Cascade)
+  floorNumber  Int
+  planImageUrl String // S3 / CDN link
+  rooms        Room[]
+
+  @@unique([buildingId, floorNumber])
+}
+
+model Room {
+  id                 String     @id @default(uuid())
+  floorId            String
+  floor              Floor      @relation(fields: [floorId], references: [id], onDelete: Cascade)
+  roomNumber         String
+  area               Float // m²
+  basePrice          Decimal // base rent rate
+  polygonCoordinates Json // [{ x: Float, y: Float }] — fractions 0..1
+  currentStatus      RoomStatus @default(FREE)
+  contracts          Contract[]
+
+  @@unique([floorId, roomNumber])
+}
+
+model Tenant {
+  id          String     @id @default(uuid())
+  companyName String
+  email       String     @unique
+  phone       String
+  contracts   Contract[]
+}
+
+model Contract {
+  id        String    @id @default(uuid())
+  roomId    String
+  room      Room      @relation(fields: [roomId], references: [id])
+  tenantId  String
+  tenant    Tenant    @relation(fields: [tenantId], references: [id])
+  startDate DateTime
+  endDate   DateTime
+  isActive  Boolean   @default(true)
+  invoices  Invoice[]
+}
+
+model Invoice {
+  id         String        @id @default(uuid())
+  contractId String
+  contract   Contract      @relation(fields: [contractId], references: [id], onDelete: Cascade)
+  amount     Decimal
+  dueDate    DateTime // payment deadline
+  status     InvoiceStatus @default(UNPAID)
+  createdAt  DateTime      @default(now())
+}
