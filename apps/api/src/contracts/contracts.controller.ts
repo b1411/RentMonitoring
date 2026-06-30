@@ -8,6 +8,7 @@ import {
   Post,
   Query,
 } from '@nestjs/common';
+import { Roles } from '../auth/decorators/roles.decorator';
 import { ZodValidationPipe } from '../common/zod-validation.pipe';
 import {
   CreateContractSchema,
@@ -21,6 +22,7 @@ import { ContractsService } from './contracts.service';
 export class ContractsController {
   constructor(private readonly contracts: ContractsService) {}
 
+  @Roles('ADMIN', 'MANAGER')
   @Post()
   create(
     @Body(new ZodValidationPipe(CreateContractSchema))
@@ -42,6 +44,7 @@ export class ContractsController {
     return this.contracts.findOne(id);
   }
 
+  @Roles('ADMIN', 'MANAGER')
   @Patch(':id')
   update(
     @Param('id') id: string,
@@ -51,6 +54,7 @@ export class ContractsController {
     return this.contracts.update(id, data);
   }
 
+  @Roles('ADMIN', 'MANAGER')
   @Delete(':id')
   remove(@Param('id') id: string) {
     return this.contracts.remove(id);

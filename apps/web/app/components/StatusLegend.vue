@@ -3,11 +3,14 @@ import { ROOM_STATUS_META, ROOM_STATUSES } from '~/lib/status';
 import { cn } from '~/lib/utils';
 import type { Room, RoomStatus } from '~/types';
 
-const props = defineProps<{ rooms: Room[] }>();
+const props = withDefaults(
+  defineProps<{ rooms: Room[]; statuses?: RoomStatus[] }>(),
+  { statuses: () => ROOM_STATUSES },
+);
 
 const counts = computed(() => {
-  const map = Object.fromEntries(ROOM_STATUSES.map((s) => [s, 0])) as Record<RoomStatus, number>;
-  for (const r of props.rooms) map[r.currentStatus] += 1;
+  const map = Object.fromEntries(props.statuses.map((s) => [s, 0])) as Record<RoomStatus, number>;
+  for (const r of props.rooms) if (r.currentStatus in map) map[r.currentStatus] += 1;
   return map;
 });
 </script>
@@ -15,7 +18,7 @@ const counts = computed(() => {
 <template>
   <div class="flex flex-wrap gap-2">
     <div
-      v-for="status in ROOM_STATUSES"
+      v-for="status in statuses"
       :key="status"
       class="flex items-center gap-2 rounded-xl bg-surface/60 px-3 py-2 ring-1 ring-border/60"
     >

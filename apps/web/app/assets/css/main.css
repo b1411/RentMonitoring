@@ -1,27 +1,31 @@
 @import 'tailwindcss';
 
-/* ───────────────────────────  Design tokens  ─────────────────────────── */
+/* ───────────────────────────  Design tokens (light)  ─────────────────────────── */
 @theme {
   --font-sans: 'Inter', ui-sans-serif, system-ui, sans-serif;
   --font-mono: 'JetBrains Mono', ui-monospace, monospace;
 
-  --color-bg: oklch(0.18 0.02 265);
-  --color-bg-soft: oklch(0.22 0.025 265);
-  --color-surface: oklch(0.25 0.03 265);
-  --color-surface-2: oklch(0.29 0.035 265);
-  --color-border: oklch(0.34 0.03 265);
-  --color-muted: oklch(0.62 0.02 265);
-  --color-fg: oklch(0.96 0.01 265);
+  /* Neutrals — soft, slightly cool off-white surfaces on near-slate text. */
+  --color-bg: oklch(0.985 0.004 264);
+  --color-bg-soft: oklch(0.965 0.006 264);
+  --color-surface: oklch(1 0 0);
+  --color-surface-2: oklch(0.972 0.005 264);
+  --color-border: oklch(0.915 0.007 264);
+  --color-muted: oklch(0.52 0.02 264);
+  --color-fg: oklch(0.27 0.03 264);
 
-  --color-brand: oklch(0.62 0.19 277);
-  --color-brand-soft: oklch(0.7 0.16 277);
+  /* Accent — vivid indigo-violet. */
+  --color-brand: oklch(0.55 0.22 280);
+  --color-brand-soft: oklch(0.63 0.19 285);
 
   --radius-lg: 1rem;
   --radius-xl: 1.25rem;
   --radius-2xl: 1.5rem;
 
-  --shadow-glow: 0 0 0 1px oklch(0.62 0.19 277 / 0.25), 0 8px 40px -8px oklch(0.62 0.19 277 / 0.45);
-  --shadow-card: 0 1px 0 0 oklch(1 0 0 / 0.04) inset, 0 20px 50px -20px oklch(0 0 0 / 0.6);
+  --shadow-glow: 0 0 0 1px oklch(0.55 0.22 280 / 0.18),
+    0 12px 32px -12px oklch(0.55 0.22 280 / 0.5);
+  --shadow-card: 0 1px 2px oklch(0.27 0.03 264 / 0.05),
+    0 16px 40px -22px oklch(0.27 0.03 264 / 0.28);
 
   --animate-fade-in: fade-in 0.4s cubic-bezier(0.16, 1, 0.3, 1);
   --animate-slide-up: slide-up 0.5s cubic-bezier(0.16, 1, 0.3, 1);
@@ -62,7 +66,7 @@
     border-color: var(--color-border);
   }
   html {
-    color-scheme: dark;
+    color-scheme: light;
   }
   body {
     background: var(--color-bg);
@@ -72,7 +76,7 @@
     text-rendering: optimizeLegibility;
   }
   ::selection {
-    background: oklch(0.62 0.19 277 / 0.4);
+    background: oklch(0.55 0.22 280 / 0.22);
   }
   /* Custom scrollbar (Tailwind v4 native support) */
   ::-webkit-scrollbar {
@@ -93,20 +97,23 @@
 
 /* ───────────────────────────  Utilities  ─────────────────────────── */
 @utility glass {
-  background: oklch(0.25 0.03 265 / 0.6);
-  backdrop-filter: blur(16px) saturate(150%);
-  border: 1px solid oklch(1 0 0 / 0.08);
+  background: oklch(1 0 0 / 0.72);
+  backdrop-filter: blur(16px) saturate(140%);
+  border: 1px solid oklch(0.27 0.03 264 / 0.07);
+  box-shadow: 0 1px 2px oklch(0.27 0.03 264 / 0.04),
+    0 16px 40px -24px oklch(0.27 0.03 264 / 0.25);
 }
 
 @utility bg-grid {
   background-image:
-    linear-gradient(oklch(1 0 0 / 0.03) 1px, transparent 1px),
-    linear-gradient(90deg, oklch(1 0 0 / 0.03) 1px, transparent 1px);
+    linear-gradient(oklch(0.27 0.03 264 / 0.045) 1px, transparent 1px),
+    linear-gradient(90deg, oklch(0.27 0.03 264 / 0.045) 1px, transparent 1px);
   background-size: 40px 40px;
+  mask-image: radial-gradient(ellipse 80% 60% at 50% 0%, #000 40%, transparent 100%);
 }
 
 @utility text-gradient {
-  background: linear-gradient(135deg, var(--color-fg), var(--color-brand-soft));
+  background: linear-gradient(120deg, var(--color-brand), oklch(0.6 0.2 330));
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;

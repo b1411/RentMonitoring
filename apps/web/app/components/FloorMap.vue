@@ -5,10 +5,15 @@ import { ROOM_STATUS_META } from '~/lib/status';
 import { cn, money, formatDate } from '~/lib/utils';
 import type { Floor, Room } from '~/types';
 
-const props = defineProps<{ floor: Floor }>();
+const props = withDefaults(
+  defineProps<{ floor: Floor; canViewFinance?: boolean }>(),
+  { canViewFinance: false },
+);
 const emit = defineEmits<{ select: [room: Room] }>();
 
 const rooms = computed(() => props.floor.rooms ?? []);
+const hasPlan = computed(() => Boolean(props.floor.planImageUrl));
+const planAspect = usePlanAspect(() => props.floor.planImageUrl);
 
 function points(room: Room): string {
   return room.polygonCoordinates.map((p) => `${(p.x * 1000).toFixed(1)},${(p.y * 1000).toFixed(1)}`).join(' ');
@@ -96,7 +101,8 @@ const reset = () => {
 <template>
   <div
     ref="wrapRef"
-    class="relative aspect-square w-full select-none overflow-hidden rounded-2xl border border-border/60 bg-bg-soft shadow-card"
+    class="relative w-full select-none overflow-hidden rounded-2xl border border-border/60 bg-bg-soft shadow-card"
+    :style="{ aspectRatio: planAspect }"
     @mousemove="onMove"
     @mouseleave="hovered = null"
   >
@@ -124,16 +130,26 @@ const reset = () => {
         viewBox="0 0 1000 1000"
         class="h-full w-full"
         style="content-visibility: auto"
-        preserveAspectRatio="xMidYMid meet"
+        preserveAspectRatio="none"
       >
+        <defs>
+          <pattern id="map-blankgrid" width="50" height="50" patternUnits="userSpaceOnUse">
+            <path d="M50 0H0V50" fill="none" stroke="var(--color-border)" stroke-width="1" />
+          </pattern>
+        </defs>
         <image
+          v-if="hasPlan"
           :href="floor.planImageUrl"
           x="0"
           y="0"
           width="1000"
           height="1000"
-          preserveAspectRatio="xMidYMid slice"
+          preserveAspectRatio="none"
         />
+        <template v-else>
+          <rect x="0" y="0" width="1000" height="1000" class="fill-surface" />
+          <rect x="0" y="0" width="1000" height="1000" fill="url(#map-blankgrid)" />
+        </template>
         <g>
           <polygon
             v-for="(room, i) in rooms"
@@ -161,10 +177,17 @@ const reset = () => {
             :y="centroid(room).y"
             text-anchor="middle"
             dominant-baseline="middle"
-            class="room-label fill-white/90 font-mono text-[22px] font-semibold"
+            class="room-label fill-slate-800 font-mono text-[22px] font-semibold"
           >
             {{ room.roomNumber }}
           </text>
+        </g>
+
+        <!-- Doors (blueprint openings) -->
+        <g class="pointer-events-none">
+          <template v-for="room in rooms" :key="room.id + '-door'">
+            <DoorMark v-if="room.door" :door="room.door" />
+          </template>
         </g>
       </svg>
     </div>
@@ -184,7 +207,7 @@ const reset = () => {
           <UiStatusBadge :status="hovered.currentStatus" />
         </div>
         <dl class="mt-2.5 space-y-1.5 text-xs">
-          <div class="flex justify-between gap-2">
+          <div v-if="canViewFinance" class="flex justify-between gap-2">
             <dt class="text-muted">Арендатор</dt>
             <dd class="truncate font-medium text-fg">{{ tenantName(hovered) ?? '—' }}</dd>
           </div>
@@ -192,16 +215,18 @@ const reset = () => {
             <dt class="text-muted">Площадь</dt>
             <dd class="font-medium text-fg">{{ hovered.area }} м²</dd>
           </div>
-          <div class="flex justify-between gap-2">
+          <div v-if="canViewFinance || hovered.currentStatus === 'FREE'" class="flex justify-between gap-2">
             <dt class="text-muted">Ставка</dt>
             <dd class="font-medium text-fg">{{ money(hovered.basePrice) }}</dd>
           </div>
-          <div v-if="contractEnd(hovered)" class="flex justify-between gap-2">
+          <div v-if="canViewFinance && contractEnd(hovered)" class="flex justify-between gap-2">
             <dt class="text-muted">Договор до</dt>
             <dd class="font-medium text-fg">{{ contractEnd(hovered) }}</dd>
           </div>
         </dl>
-        <p class="mt-2.5 text-center text-[11px] text-muted">Клик — детали и фин-история</p>
+        <p class="mt-2.5 text-center text-[11px] text-muted">
+          {{ canViewFinance ? 'Клик — детали и фин-история' : 'Клик — детали помещения' }}
+        </p>
       </div>
     </Transition>
   </div>
@@ -218,7 +243,7 @@ const reset = () => {
 }
 .room-label {
   paint-order: stroke;
-  stroke: #0d1326;
+  stroke: #ffffff;
   stroke-width: 4px;
 }
 .tt-enter-active,

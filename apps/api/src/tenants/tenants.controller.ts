@@ -7,6 +7,7 @@ import {
   Patch,
   Post,
 } from '@nestjs/common';
+import { Roles } from '../auth/decorators/roles.decorator';
 import { ZodValidationPipe } from '../common/zod-validation.pipe';
 import {
   CreateTenantSchema,
@@ -20,6 +21,7 @@ import { TenantsService } from './tenants.service';
 export class TenantsController {
   constructor(private readonly tenants: TenantsService) {}
 
+  @Roles('ADMIN', 'MANAGER')
   @Post()
   create(
     @Body(new ZodValidationPipe(CreateTenantSchema)) data: CreateTenantInput,
@@ -37,6 +39,7 @@ export class TenantsController {
     return this.tenants.findOne(id);
   }
 
+  @Roles('ADMIN', 'MANAGER')
   @Patch(':id')
   update(
     @Param('id') id: string,
@@ -45,6 +48,7 @@ export class TenantsController {
     return this.tenants.update(id, data);
   }
 
+  @Roles('ADMIN', 'MANAGER')
   @Delete(':id')
   remove(@Param('id') id: string) {
     return this.tenants.remove(id);

@@ -1,9 +1,28 @@
 export type RoomStatus = 'FREE' | 'BOOKED' | 'OCCUPIED' | 'OVERDUE' | 'REPAIR';
 export type InvoiceStatus = 'UNPAID' | 'PAID' | 'CANCELLED';
+export type Role = 'ADMIN' | 'MANAGER' | 'VIEWER';
+
+export interface AuthUser {
+  id: string;
+  email: string;
+  name: string;
+  role: Role;
+}
+
+export interface LoginResponse {
+  token: string;
+  user: AuthUser;
+}
 
 export interface Point {
   x: number;
   y: number;
+}
+
+/** Door = a wall opening drawn as a segment a→b (fractions 0..1). */
+export interface Door {
+  a: Point;
+  b: Point;
 }
 
 export interface Tenant {
@@ -40,6 +59,7 @@ export interface Room {
   area: number;
   basePrice: string;
   polygonCoordinates: Point[];
+  door?: Door | null;
   currentStatus: RoomStatus;
   contracts?: Contract[];
   floor?: Floor;

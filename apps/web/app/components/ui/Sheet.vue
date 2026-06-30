@@ -10,10 +10,10 @@ defineProps<{ title?: string; subtitle?: string }>();
   <DialogRoot v-model:open="open">
     <DialogPortal>
       <DialogOverlay
-        class="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm data-[state=open]:animate-fade-in"
+        class="fixed inset-0 z-50 bg-slate-900/30 backdrop-blur-sm data-[state=open]:animate-fade-in"
       />
       <DialogContent
-        class="glass fixed right-0 top-0 z-50 flex h-full w-full max-w-md flex-col border-l shadow-2xl outline-none data-[state=open]:animate-slide-in-right"
+        class="glass fixed right-0 top-0 z-50 flex h-full w-full max-w-md flex-col border-l shadow-card outline-none data-[state=open]:animate-slide-in-right"
       >
         <header class="flex items-start justify-between gap-4 border-b border-border/60 px-6 py-5">
           <div class="min-w-0">

@@ -1,9 +1,11 @@
 import { z } from 'zod';
 
+// Plan image is optional — admin can draw on a blank grid, then upload later
+// via POST /floors/:id/plan. Empty string = blank canvas.
 export const CreateFloorSchema = z.object({
   buildingId: z.uuid(),
   floorNumber: z.coerce.number().int(),
-  planImageUrl: z.string().min(1),
+  planImageUrl: z.string().default(''),
 });
 
 export const UpdateFloorSchema = CreateFloorSchema.partial().omit({

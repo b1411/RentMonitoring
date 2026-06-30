@@ -1,4 +1,5 @@
 import { BadRequestException, Controller, Param, Post } from '@nestjs/common';
+import { Roles } from '../auth/decorators/roles.decorator';
 import { JobsService } from './jobs.service';
 
 /** Manual triggers for the cron workers — handy for QA without waiting for the schedule. */
@@ -6,6 +7,7 @@ import { JobsService } from './jobs.service';
 export class JobsController {
   constructor(private readonly jobs: JobsService) {}
 
+  @Roles('ADMIN')
   @Post('run/:task')
   run(@Param('task') task: string) {
     switch (task) {

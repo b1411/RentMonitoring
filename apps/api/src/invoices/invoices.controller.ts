@@ -7,6 +7,7 @@ import {
   Post,
   Query,
 } from '@nestjs/common';
+import { Roles } from '../auth/decorators/roles.decorator';
 import { ZodValidationPipe } from '../common/zod-validation.pipe';
 import {
   CreateInvoiceSchema,
@@ -20,6 +21,7 @@ import { InvoicesService } from './invoices.service';
 export class InvoicesController {
   constructor(private readonly invoices: InvoicesService) {}
 
+  @Roles('ADMIN', 'MANAGER')
   @Post()
   create(
     @Body(new ZodValidationPipe(CreateInvoiceSchema)) data: CreateInvoiceInput,
@@ -40,6 +42,7 @@ export class InvoicesController {
     return this.invoices.findOne(id);
   }
 
+  @Roles('ADMIN', 'MANAGER')
   @Patch(':id/status')
   updateStatus(
     @Param('id') id: string,

@@ -1,10 +1,17 @@
 <script setup lang="ts">
-import { Building2, CalendarRange, Wallet, Receipt, CheckCircle2 } from 'lucide-vue-next';
+import { Building2, CalendarRange, Wallet, Receipt, CheckCircle2, Lock, DoorOpen, Mail } from 'lucide-vue-next';
 import { cn, money, formatDate } from '~/lib/utils';
 import type { Room, Invoice, InvoiceStatus } from '~/types';
 
 const open = defineModel<boolean>('open', { default: false });
-const props = defineProps<{ roomId: string | null }>();
+const props = withDefaults(
+  defineProps<{
+    roomId: string | null;
+    room?: Room | null;
+    canViewFinance?: boolean;
+  }>(),
+  { room: null, canViewFinance: false },
+);
 const emit = defineEmits<{ changed: [] }>();
 
 const api = useApi();
@@ -24,10 +31,21 @@ async function load(id: string) {
 watch(
   () => props.roomId,
   (id) => {
-    room.value = null;
-    if (id) void load(id);
+    // Show the basic room instantly; fetch full financials only for signed-in users.
+    room.value = props.room;
+    if (id && props.canViewFinance) void load(id);
   },
 );
+
+// Client lead — opens the mail composer pre-filled for the selected free room.
+const leadHref = computed(() => {
+  const r = room.value;
+  const subject = encodeURIComponent(`Заявка на аренду — помещение ${r?.roomNumber ?? ''}`);
+  const body = encodeURIComponent(
+    `Здравствуйте! Интересует помещение ${r?.roomNumber ?? ''} (${r?.area ?? ''} м²). Прошу связаться по вопросу аренды.`,
+  );
+  return `mailto:?subject=${subject}&body=${body}`;
+});
 
 const activeContract = computed(() => room.value?.contracts?.find((c) => c.isActive) ?? null);
 const tenant = computed(() => activeContract.value?.tenant ?? null);
@@ -41,8 +59,8 @@ const balance = computed(() =>
 );
 
 const INVOICE_META: Record<InvoiceStatus, { label: string; cls: string }> = {
-  UNPAID: { label: 'Не оплачен', cls: 'bg-red-500/15 text-red-300 ring-red-500/30' },
-  PAID: { label: 'Оплачен', cls: 'bg-emerald-500/15 text-emerald-300 ring-emerald-500/30' },
+  UNPAID: { label: 'Не оплачен', cls: 'bg-red-500/12 text-red-700 ring-red-500/25' },
+  PAID: { label: 'Оплачен', cls: 'bg-emerald-500/12 text-emerald-700 ring-emerald-500/25' },
   CANCELLED: { label: 'Отменён', cls: 'bg-surface-2 text-muted ring-border' },
 };
 
@@ -75,11 +93,53 @@ async function pay(inv: Invoice) {
     <div v-else-if="room" class="space-y-6">
       <div class="flex items-center justify-between">
         <UiStatusBadge :status="room.currentStatus" />
-        <span class="font-mono text-sm text-muted">{{ room.area }} м² · {{ money(room.basePrice) }}</span>
+        <span class="font-mono text-sm text-muted">
+          {{ room.area }} м²<template v-if="canViewFinance || room.currentStatus === 'FREE'">
+            · {{ money(room.basePrice) }}</template
+          >
+        </span>
       </div>
 
+      <!-- Client listing: free → area + price + lead CTA; occupied → just unavailable -->
+      <section v-if="!canViewFinance">
+        <template v-if="room.currentStatus === 'FREE'">
+          <div class="rounded-2xl bg-emerald-500/8 p-5 ring-1 ring-emerald-500/25">
+            <p class="flex items-center gap-2 text-sm font-semibold text-emerald-700">
+              <DoorOpen class="h-4 w-4" /> Свободно — можно арендовать
+            </p>
+            <dl class="mt-4 grid grid-cols-2 gap-3">
+              <div class="rounded-xl bg-surface/70 p-3 ring-1 ring-border/60">
+                <dt class="text-xs text-muted">Площадь</dt>
+                <dd class="mt-0.5 text-lg font-bold text-fg">{{ room.area }} м²</dd>
+              </div>
+              <div class="rounded-xl bg-surface/70 p-3 ring-1 ring-border/60">
+                <dt class="text-xs text-muted">Ставка</dt>
+                <dd class="mt-0.5 text-lg font-bold text-fg">{{ money(room.basePrice) }}</dd>
+              </div>
+            </dl>
+          </div>
+          <a
+            :href="leadHref"
+            class="mt-3 flex items-center justify-center gap-2 rounded-xl bg-brand px-4 py-3 text-sm font-semibold text-white shadow-glow transition-transform hover:scale-[1.02]"
+          >
+            <Mail class="h-4 w-4" /> Оставить заявку на аренду
+          </a>
+        </template>
+        <div v-else class="rounded-2xl bg-surface/50 p-5 text-center ring-1 ring-border/60">
+          <Lock class="mx-auto h-6 w-6 text-muted" />
+          <p class="mt-3 text-sm font-medium text-fg">Помещение занято</p>
+          <p class="mt-1 text-xs text-muted">Свободные площади отмечены зелёным на карте.</p>
+        </div>
+        <NuxtLink
+          to="/login"
+          class="mt-4 block text-center text-xs font-medium text-muted underline-offset-2 hover:text-fg hover:underline"
+        >
+          Сотрудник? Войти
+        </NuxtLink>
+      </section>
+
       <!-- Tenant -->
-      <section class="rounded-2xl bg-surface/50 p-4 ring-1 ring-border/60">
+      <section v-if="canViewFinance" class="rounded-2xl bg-surface/50 p-4 ring-1 ring-border/60">
         <h3 class="mb-3 flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-muted">
           <Building2 class="h-3.5 w-3.5" /> Арендатор
         </h3>
@@ -91,10 +151,10 @@ async function pay(inv: Invoice) {
       </section>
 
       <!-- Summary cards -->
-      <div class="grid grid-cols-2 gap-3">
+      <div v-if="canViewFinance" class="grid grid-cols-2 gap-3">
         <div class="rounded-2xl bg-surface/50 p-4 ring-1 ring-border/60">
           <p class="flex items-center gap-1.5 text-xs text-muted"><Wallet class="h-3.5 w-3.5" /> Баланс</p>
-          <p :class="cn('mt-1 text-lg font-bold', balance > 0 ? 'text-red-300' : 'text-emerald-300')">
+          <p :class="cn('mt-1 text-lg font-bold', balance > 0 ? 'text-red-600' : 'text-emerald-600')">
             {{ money(balance) }}
           </p>
         </div>
@@ -112,7 +172,7 @@ async function pay(inv: Invoice) {
       </div>
 
       <!-- Invoice history -->
-      <section>
+      <section v-if="canViewFinance">
         <h3 class="mb-3 flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-muted">
           <Receipt class="h-3.5 w-3.5" /> Финансовая история
         </h3>
@@ -124,7 +184,7 @@ async function pay(inv: Invoice) {
           >
             <div class="min-w-0">
               <p class="font-semibold text-fg">{{ money(inv.amount) }}</p>
-              <p class="text-xs" :class="isOverdue(inv) ? 'text-red-300' : 'text-muted'">
+              <p class="text-xs" :class="isOverdue(inv) ? 'text-red-600' : 'text-muted'">
                 до {{ formatDate(inv.dueDate) }}{{ isOverdue(inv) ? ' · просрочен' : '' }}
               </p>
             </div>

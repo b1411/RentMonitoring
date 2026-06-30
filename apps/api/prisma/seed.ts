@@ -1,5 +1,6 @@
 import 'dotenv/config';
 import { PrismaPg } from '@prisma/adapter-pg';
+import * as bcrypt from 'bcryptjs';
 import { PrismaClient } from '../generated/prisma/client';
 
 const prisma = new PrismaClient({
@@ -27,6 +28,16 @@ async function main() {
   await prisma.floor.deleteMany();
   await prisma.building.deleteMany();
   await prisma.tenant.deleteMany();
+
+  // Bootstrap admin (idempotent by email). Credentials come from env.
+  const adminEmail = process.env.ADMIN_EMAIL ?? 'admin@rent.local';
+  const adminPassword = process.env.ADMIN_PASSWORD ?? 'changeme123';
+  const passwordHash = await bcrypt.hash(adminPassword, 12);
+  await prisma.user.upsert({
+    where: { email: adminEmail },
+    update: { passwordHash, role: 'ADMIN', name: 'Admin' },
+    create: { email: adminEmail, passwordHash, role: 'ADMIN', name: 'Admin' },
+  });
 
   const building = await prisma.building.create({
     data: { name: 'BC Aurora', address: 'Almaty, Al-Farabi Ave 77' },
@@ -107,6 +118,7 @@ async function main() {
   });
 
   console.log('Seed done:');
+  console.log(`  admin=${adminEmail} (password from ADMIN_PASSWORD)`);
   console.log(`  building=${building.id} floor=${floor.id}`);
   console.log(`  rooms=6 tenants=3 contracts=3 invoices=3`);
 }

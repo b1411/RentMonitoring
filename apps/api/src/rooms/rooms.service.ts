@@ -1,7 +1,9 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
+import { Prisma } from '../../generated/prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import type {
   CreateRoomInput,
+  Door,
   UpdateRoomInput,
   UpdateRoomStatusInput,
 } from './rooms.dto';
@@ -11,9 +13,13 @@ export class RoomsService {
   constructor(private readonly prisma: PrismaService) {}
 
   create(input: CreateRoomInput) {
-    const { coordinates, ...rest } = input;
+    const { coordinates, door, ...rest } = input;
     return this.prisma.room.create({
-      data: { ...rest, polygonCoordinates: coordinates },
+      data: {
+        ...rest,
+        polygonCoordinates: coordinates,
+        ...(door ? { door } : {}),
+      },
     });
   }
 
@@ -41,13 +47,23 @@ export class RoomsService {
 
   async update(id: string, input: UpdateRoomInput) {
     await this.ensureExists(id);
-    const { coordinates, ...rest } = input;
+    const { coordinates, door, ...rest } = input;
     return this.prisma.room.update({
       where: { id },
       data: {
         ...rest,
         ...(coordinates ? { polygonCoordinates: coordinates } : {}),
+        ...(door !== undefined ? { door: door ?? Prisma.DbNull } : {}),
       },
+    });
+  }
+
+  /** Set or clear the door (wall opening). `null` removes it. */
+  async setDoor(id: string, door: Door | null) {
+    await this.ensureExists(id);
+    return this.prisma.room.update({
+      where: { id },
+      data: { door: door ?? Prisma.DbNull },
     });
   }
 

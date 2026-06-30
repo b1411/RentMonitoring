@@ -12,6 +12,12 @@ datasource db {
   provider = "postgresql"
 }
 
+enum Role {
+  ADMIN
+  MANAGER
+  VIEWER
+}
+
 enum RoomStatus {
   FREE
   BOOKED
@@ -24,6 +30,15 @@ enum InvoiceStatus {
   UNPAID
   PAID
   CANCELLED
+}
+
+model User {
+  id           String   @id @default(uuid())
+  email        String   @unique
+  passwordHash String
+  name         String
+  role         Role     @default(VIEWER)
+  createdAt    DateTime @default(now())
 }
 
 model Building {
@@ -53,6 +68,7 @@ model Room {
   area               Float // m²
   basePrice          Decimal // base rent rate
   polygonCoordinates Json // [{ x: Float, y: Float }] — fractions 0..1
+  door               Json? // optional { x: Float, y: Float } entrance marker — fractions 0..1
   currentStatus      RoomStatus @default(FREE)
   contracts          Contract[]
 
